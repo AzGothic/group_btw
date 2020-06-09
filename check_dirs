@@ -1,0 +1,78 @@
+#!/usr/bin/env php
+<?php
+
+echo "Processing...\n";
+
+/** Error Reporting */
+ini_set('display_errors', true);
+error_reporting(E_ALL);
+
+/** Root Path definition */
+defined('ROOT_PATH') ||
+define('ROOT_PATH', __DIR__ . '/');
+
+/** Require needed classes files */
+require_once ROOT_PATH . 'helper/DirHelper.php';
+
+/** @var array $params cli params */
+$params = getopt('', [
+    'dir:',
+    'rmempty',
+]);
+
+if (empty($params['dir'])) {
+    echo "Param '--dir' is required\n";
+    exit;
+}
+
+/** @var string $dir path to dir need to be checked */
+$dir = ROOT_PATH . rtrim($params['dir'], '\\/') . '/';
+echo "--dir '$dir'\n";
+if (!file_exists($dir) || !is_dir($dir)) {
+    echo "'--dir' must be existing directory\n";
+    exit;
+}
+
+/** @var bool $rmempty remove empty directories */
+$rmempty = isset($params['rmempty']);
+echo "--rmempty " . ($rmempty ? 'TRUE' : 'FALSE') . "\n";
+
+/** @var array $list subdirectories listing */
+$list = DirHelper::ls($dir, DirHelper::FILTER_DIRS);
+foreach ($list as $subdir) {
+    echo "Checking: '" . $subdir['name'] . "'...\n";
+    /** @var array $sublist directories files and folders */
+    $sublist = DirHelper::ls($subdir['path']);
+    /**
+     * @var string $key in format "$type::$name"
+     * @var array $item
+     */
+    foreach ($sublist as $key => $item) {
+        if ($item['type'] != DirHelper::TYPE_FILE) {
+            continue;
+        }
+
+        if (empty($item['info']['extension']) || $item['info']['extension'] != 'bak') {
+            continue;
+        }
+
+        /** @var string $bakName .bak file name without extension */
+        $bakName = $item['info']['filename'];
+        if (isset($sublist[DirHelper::TYPE_FILE . "::$bakName.doc"])) {
+            continue;
+        }
+
+        /** main file for .bak not exists, need remove .bak file */
+        DirHelper::rm($item['path']);
+        unset($sublist[$key]);
+        echo "File '" . $item['name'] . "' removed\n";
+    }
+
+    /** current directory is empty */
+    if (!count($sublist) && $rmempty) {
+        DirHelper::rm($subdir['path']);
+        echo "Dir '" . $subdir['name'] . "' removed\n";
+    }
+}
+
+echo "Done\n";

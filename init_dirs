@@ -1,0 +1,63 @@
+#!/usr/bin/env php
+<?php
+
+echo "Processing...\n";
+
+/** Error Reporting */
+ini_set('display_errors', true);
+error_reporting(E_ALL);
+
+/** Root Path definition */
+defined('ROOT_PATH') ||
+define('ROOT_PATH', __DIR__ . '/');
+
+/** Require needed classes files */
+require_once ROOT_PATH . 'helper/DirHelper.php';
+
+/** @var string $main path to the main test dir */
+$main = ROOT_PATH . 'files/';
+if (!file_exists($main) || !is_dir($main)) {
+    mkdir($main, 0766);
+    echo "Dir '$main' created\n";
+}
+
+/** @var array $filesStructure structure of dirs/files needs to be created */
+$filesStructure = [
+    'dir1' => [
+        'doc1.1.doc',
+        'doc1.1.bak',
+        'doc1.2.bak',
+    ],
+    'dir2' => [
+        'doc2.1.doc',
+    ],
+    'dir3' => [
+        'doc3.1.bak',
+        'doc3.2.bak',
+    ],
+    'dir4' => [
+    ],
+];
+
+foreach ($filesStructure as $dir => $files) {
+    $dirPath = $main . $dir . '/';
+    if (!file_exists($dirPath) || !is_dir($dirPath)) {
+        mkdir($dirPath, 0766);
+        echo "Dir 'files/$dir/' created\n";
+    }
+
+    if (!$files) {
+        continue;
+    }
+
+    foreach ($files as $file) {
+        $filePath = $dirPath . $file;
+        if (!file_exists($filePath) || !is_file($filePath)) {
+            file_put_contents($filePath, '');
+            chmod($filePath, 0766);
+            echo "File 'files/$dir/$file' created\n";
+        }
+    }
+}
+
+echo "Done\n";
